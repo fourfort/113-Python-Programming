@@ -1,0 +1,37 @@
+#python程式
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 設定隨機種子以獲得可重複的結果
+np.random.seed(42)
+
+# 每個圖的樣本數量
+n_samples = 100
+
+# 設定相關係數
+correlation_coefficients = [-0.9, 0, 0.9]
+
+# 建立圖形和子圖
+fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+
+# 生成並繪製數據
+for ax, corr in zip(axs, correlation_coefficients):
+    # 生成 X 的隨機數據
+    X = np.random.randn(n_samples)
+
+    if corr != 0:
+        # 生成具有所需相關性的 Y
+        Y = corr * X + np.sqrt(1 - corr**2) * np.random.randn(n_samples)
+    else:
+        # 生成與 X 完全獨立的 Y
+        Y = np.random.randn(n_samples)
+
+    # 繪製散佈圖
+    ax.scatter(X, Y)
+    ax.set_title(f'Correlation Coefficient: {corr}')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+
+# 顯示圖形
+plt.tight_layout()
+plt.show()

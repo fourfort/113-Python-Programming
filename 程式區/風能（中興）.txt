@@ -1,0 +1,169 @@
+import random
+import matplotlib.pyplot as plt
+import numpy as np
+
+class WindPowerPlant:
+    def __init__(self, turbine_count, efficiency):
+        self.turbine_count = turbine_count
+        self.efficiency = efficiency
+        self.total_energy_produced = 0
+        self.available_energy = 0
+        self.total_energy_extracted = 0
+        self.hourly_energy_production = []
+
+    def generate_energy(self, hours_of_wind):
+        self.hourly_energy_production = []
+        for hour in range(hours_of_wind):
+            # 使用弦波函數模擬能量產出的波動
+            sin_factor = 0.5 * np.sin(hour * (2 * np.pi / 24)) + 1
+            energy_per_turbine = self.efficiency * sin_factor
+            total_hourly_energy = energy_per_turbine * self.turbine_count
+            self.total_energy_produced += total_hourly_energy
+            self.hourly_energy_production.append(total_hourly_energy)
+
+    # 獲取總發電量
+    def get_total_energy_produced(self):
+        return self.total_energy_produced
+
+    def get_hourly_energy_production(self):
+        return self.hourly_energy_production
+
+    def extract_energy(self, amount):
+        max_extraction = self.total_energy_produced * 0.6
+        if amount <= max_extraction and amount <= self.total_energy_produced:
+            self.total_energy_produced -= amount
+            self.available_energy += amount
+            self.total_energy_extracted += amount
+            print(f"成功提取 {amount} kw能量。")
+            # 更新提取能量後的能量產生列表
+            extraction_index = len(self.hourly_energy_production) - 1
+            self.hourly_energy_production[extraction_index] -= amount
+        elif amount > max_extraction:
+            print("電量提取失敗：提取的電量超過總發電量的60%。")
+        else:
+            print("能量提取失敗：提取的能量超過總發電量。")
+        print(f"剩餘電量: {self.total_energy_produced} kw")
+
+    def get_total_energy_extracted(self):
+        return self.total_energy_extracted
+
+def main():
+    default_turbine_count = 5
+    max_turbine_power = 2000
+    turbine_blade_length = 15  # 假設風力發電機的葉片長度為15米
+    speed_Max = 61.2
+    speed_Min = 0
+
+    month_wind_speeds = {
+        7: (8, 12),   # 夏季風速快
+        8: (8, 12),   # 夏季風速快
+        9: (8, 12),   # 夏季風速快
+        10: (8, 12),  # 夏季風速快
+        11: (5, 8),   # 冬季風速中等
+        12: (5, 8),   # 冬季風速中等
+        1: (5, 8),    # 冬季風速中等
+        2: (5, 8),    # 冬季風速中等
+        3: (5, 8),    # 冬季風速中等
+        4: (5, 8),    # 冬季風速中等
+        5: (3, 5),    # 春季風速較小
+        6: (3, 5)     # 春季風速較小
+    }
+
+    print("歡迎使用NCHU風力發電站模擬系統！")
+    know_wind_hours = input("請問是否知道今天的風速持續時間？(是/否) ").strip().lower()
+
+    if know_wind_hours == "是":
+        turbine_speed_min = float(input("請輸入風速範圍下限（m/s）,勿低於0m/s："))
+        while turbine_speed_min < speed_Min:
+            turbine_speed_min = float(input(f"風速範圍下限超出範圍，請重新輸入（不超過{ speed_Min } m/s）："))
+        turbine_speed_max = float(input("請輸入風速範圍上限（m/s）,勿超過61.2m/s："))
+
+        while turbine_speed_max <= turbine_speed_min or turbine_speed_max > speed_Max:
+            if turbine_speed_max <= turbine_speed_min:
+                turbine_speed_max = float(input(f"風速範圍上限必須大於下限 {turbine_speed_min} m/s，請重新輸入："))
+            else:
+                turbine_speed_max = float(input(f"風速範圍上限不能超過 { speed_Max } m/s，請重新輸入："))
+
+        hours_of_wind = int(input("請輸入風速持續時間（小時）："))
+
+    elif know_wind_hours == "否":
+         hours_of_wind = 12
+         print(f"那在這邊提醒一下使用者，系統目前預設風速持續時間為：{hours_of_wind}小時，謝謝！")
+         month = int(input("請輸入現在的月份（1-12）："))
+         if month in month_wind_speeds:
+           wind_speed_range = month_wind_speeds[month]
+         else:
+           print("無法識別的月份，將使用預設風速範圍。")
+           wind_speed_range = (5, 10)  # 使用預設風速範圍
+
+         print(f"預設風速範圍為：{wind_speed_range[0]} m/s 到 {wind_speed_range[1]} m/s")
+
+         # 隨機選擇下限，排除最大預設風速值
+         turbine_speed_min = random.randint(wind_speed_range[0], wind_speed_range[1] - 1)
+         print(f"目前的風速範圍下限設定為：{turbine_speed_min} m/s")
+
+         # 隨機選擇上限，要確保上限大於下限
+         turbine_speed_max = random.randint(turbine_speed_min, wind_speed_range[1])
+    while turbine_speed_max <= turbine_speed_min:  # 如果 max 小於等於 min，重新選擇 max
+        turbine_speed_max = random.randint(turbine_speed_min, wind_speed_range[1])
+    print(f"目前的風速範圍上限設定為：{turbine_speed_max} m/s")
+
+
+    efficiency = round((0.5 * max_turbine_power * ((turbine_speed_max + turbine_speed_min) / 2) ** 3 * np.pi * turbine_blade_length ** 2) / 1000, 3)
+
+    print(f"目前有 {default_turbine_count} 台風力發電機，每台效率為 {efficiency} kw。")
+
+    simulation_count = int(input("請輸入要模擬的次數："))
+    total_energy_produced_all_simulations = 0
+    hourly_energy_production_all_simulations = [[] for _ in range(simulation_count)]
+
+    for i in range(simulation_count):
+        print(f"風力發電模擬第{i+1}次開始...")
+        wind_plant = WindPowerPlant(default_turbine_count, efficiency)
+        wind_plant.generate_energy(hours_of_wind)
+        hourly_energy_production = wind_plant.get_hourly_energy_production()
+        total_energy_produced_all_simulations += sum(hourly_energy_production)
+        hourly_energy_production_all_simulations[i] = hourly_energy_production
+        print(f"風力發電模擬第{i+1}次結束。")
+
+    for i in range(simulation_count):
+        plt.plot(range(1, hours_of_wind + 1), hourly_energy_production_all_simulations[i], label=f'sim {i+1}')
+
+    for i in range(simulation_count):
+        plt.plot(range(1, hours_of_wind + 1), hourly_energy_production_all_simulations[i], linestyle='-',
+                 color=plt.cm.jet(i / simulation_count), linewidth=0.5)
+
+    plt.xlabel('Time (hours)')
+    plt.ylabel('Energy Production(kw)')
+    plt.title('Nuclear Power Production and Extraction')
+    plt.legend()
+    plt.grid(True)
+    print("以下是目前能量的相關圖表：")
+    plt.show()
+
+    # 提取能量過程，同時繪製截波器圖表
+    while True:
+        fig, ax = plt.subplots()
+        ax.plot(range(1, hours_of_wind + 1), hourly_energy_production_all_simulations[0], label='Current Energy Production', color='blue')
+        ax.plot(range(1, hours_of_wind + 1), hourly_energy_production_all_simulations[0], linestyle='-', color='red', linewidth=0.5)
+
+        ax.set_xlabel('time（hour）')
+        ax.set_ylabel('Energy Produced（kw）')
+        ax.set_title('Nuclear Power Production and Extraction')
+        ax.legend(loc='upper right')
+
+        extract_energy_choice = input("是否要提取能量？(是/否) ").strip().lower()
+        if extract_energy_choice != "是":
+            break
+        amount_to_extract = float(input("請輸入要提取的電量（kw）："))
+        print("正在提取能量，請稍候...")
+        wind_plant.extract_energy(amount_to_extract)
+        if input("是否需要再次提取能量？(是/否) ").strip().lower() != "是":
+          break
+    print("感謝您參與本次風力發電站的操作！祝您一路順風~")
+    print(f"總共提取的電量為: {wind_plant.get_total_energy_extracted()} 千瓦")
+    print(f"剩餘的能量為: {wind_plant.get_total_energy_produced()} 千瓦")
+    print("以下是目前能量的數值圖：")
+
+if __name__ == "__main__":
+    main()

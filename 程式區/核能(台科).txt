@@ -1,0 +1,109 @@
+import random
+import matplotlib.pyplot as plt
+import numpy as np
+
+class NuclearPowerPlant:
+    def __init__(self, reactor_count, efficiency):
+        self.reactor_count = reactor_count
+        self.efficiency = efficiency
+        self.total_energy_produced = 0
+        self.available_energy = 0
+        self.total_energy_extracted = 0
+        self.hourly_energy_production = []
+
+    def generate_energy(self, hours_of_operation):
+        self.hourly_energy_production = []
+        for hour in range(hours_of_operation):
+            random_factor = random.uniform(0.8, 1.2)
+            energy_per_reactor = self.efficiency * random_factor
+            total_hourly_energy = energy_per_reactor * self.reactor_count
+            self.total_energy_produced += total_hourly_energy
+            self.hourly_energy_production.append(total_hourly_energy)
+
+    def get_total_energy_produced(self):
+        return self.total_energy_produced
+
+    def get_hourly_energy_production(self):
+        return self.hourly_energy_production
+
+    def extract_energy(self, amount):
+        max_extraction = self.total_energy_produced * 0.6
+        if amount <= max_extraction and amount <= self.total_energy_produced:
+            self.total_energy_produced -= amount
+            self.available_energy += amount
+            self.total_energy_extracted += amount
+            print(f"成功提取 {amount} kw 能量。")
+            extraction_index = len(self.hourly_energy_production) - 1
+            self.hourly_energy_production[extraction_index] -= amount
+        elif amount > max_extraction:
+            print("電量提取失敗：提取的電量超過總發電量的60%。")
+        else:
+            print("能量提取失敗：提取的能量超過總發電量。")
+        print(f"剩餘電量: {self.total_energy_produced} kw")
+
+    def get_total_energy_extracted(self):
+        return self.total_energy_extracted
+
+def main():
+    default_reactor_count = 4
+    max_reactor_output = 2000
+    operation_hours = 24
+
+    efficiency = round((max_reactor_output * default_reactor_count) / (operation_hours), 3)
+
+    print("歡迎使用NTUST核能發電系統模擬器！")
+    print(f"目前有 {default_reactor_count} 個反應爐，每個效率為 {efficiency} kw。")
+
+    simulation_count = int(input("請輸入要模擬的次数："))
+    total_energy_produced_all_simulations = 0
+    hourly_energy_production_all_simulations = [[] for _ in range(simulation_count)]
+
+    for i in range(simulation_count):
+        print(f"核能發電模擬第{i+1}次開始...")
+        nuclear_plant = NuclearPowerPlant(default_reactor_count, efficiency)
+        nuclear_plant.generate_energy(operation_hours)
+        hourly_energy_production = nuclear_plant.get_hourly_energy_production()
+        total_energy_produced_all_simulations += sum(hourly_energy_production)
+        hourly_energy_production_all_simulations[i] = hourly_energy_production
+        print(f"核能發電模擬第{i+1}次结束。")
+
+    for i in range(simulation_count):
+        plt.plot(range(1, operation_hours + 1), hourly_energy_production_all_simulations[i], label=f'Sim {i+1}')
+
+    for i in range(simulation_count):
+        plt.plot(range(1, operation_hours + 1), hourly_energy_production_all_simulations[i], linestyle='-',
+                 color=plt.cm.jet(i / simulation_count), linewidth=0.5)
+
+    plt.xlabel('Time (hours)')
+    plt.ylabel('Energy Produced (kw)')
+    plt.title('Nuclear Power Production Simulation')
+    plt.legend()
+    plt.grid(True)
+    print("以下是目前能量的相關圖表：")
+    plt.show()
+
+    while True:
+        fig, ax = plt.subplots()
+        ax.plot(range(1, operation_hours + 1), hourly_energy_production_all_simulations[0], label='Current Energy Production', color='blue')
+        ax.plot(range(1, operation_hours + 1), hourly_energy_production_all_simulations[0], linestyle='-', color='red', linewidth=0.5)
+
+        ax.set_xlabel('Time (hours)')
+        ax.set_ylabel('Energy Produced (kw)')
+        ax.set_title('Nuclear Power Production and Extraction')
+        ax.legend(loc='upper right')
+
+        extract_energy_choice = input("是否要提取能量？(是/否) ").strip().lower()
+        if extract_energy_choice != "是":
+            break
+        amount_to_extract = float(input("請输入要提取的电量（kw）："))
+        print("正在提取能量，请稍候...")
+        nuclear_plant.extract_energy(amount_to_extract)
+        if input("是否需要再次提取能量？(是/否) ").strip().lower() != "是":
+          break
+    print("感謝您參與本次核能發電系統的操作！祝您一路順風~")
+    print(f"總共提取的电量为: {nuclear_plant.get_total_energy_extracted()} kw")
+    print(f"剩餘能量為: {nuclear_plant.get_total_energy_produced()} kw")
+    print("以下是目前能量的數值圖表：")
+
+if __name__ == "__main__":
+    main()

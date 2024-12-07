@@ -1,0 +1,98 @@
+import random
+import pandas as pd
+from collections import Counter
+
+# 讀取CSV文件
+file_path = '/content/drive/MyDrive/大樂透/大樂透歷史記錄 .csv' # 確保檔案路徑正確
+afile = pd.read_csv(file_path)
+file_path2 ='/content/drive/MyDrive/大樂透/guojing0805.csv'
+
+# 提取中獎號碼和特別號
+draws = []
+special_numbers = []
+# 使用 iloc 從索引 0 開始遍歷
+for i in range(len(afile)):
+    # 提取每行的中獎號碼和特別號
+    numbers = [afile.iloc[i]['num1'], afile.iloc[i]['num2'], afile.iloc[i]['num3'],
+               afile.iloc[i]['num4'], afile.iloc[i]['num5'], afile.iloc[i]['num6']]
+    special_number = afile.iloc[i]['特別號']
+    draws.append(numbers)
+    special_numbers.append(special_number)
+
+# 轉換成DataFrame
+df = pd.DataFrame(draws, columns=["Num1", "Num2", "Num3", "Num4", "Num5", "Num6"])
+df["Special"] = special_numbers
+
+# 找出每個號碼出現的頻率
+all_numbers = [num for draw in draws for num in draw]
+number_frequency = Counter(all_numbers)
+special_number_frequency = Counter(special_numbers)
+
+# 根據頻率選擇前6個最常出現的號碼作為預測
+most_common_numbers = [num for num, count in number_frequency.most_common(6)]
+most_common_special = special_number_frequency.most_common(1)[0][0]
+
+# 另外一種策略是隨機選擇未出現在前6個最常見號碼的號碼
+remaining_numbers = [num for num in range(1, 50) if num not in most_common_numbers]
+random_choice = random.sample(remaining_numbers, 6)
+remaining_special_numbers = [num for num in range(1, 50) if num not in special_numbers]
+
+# 如果 remaining_special_numbers 是空的，從所有可能的號碼中選擇
+if not remaining_special_numbers:
+    remaining_special_numbers = [num for num in range(1, 50)]
+
+random_special_choice = random.choice(remaining_special_numbers)
+
+# 完全隨機生成 6 個普通號碼和一個特別號
+def generate_random_numbers():
+    normal_numbers = random.sample(range(1, 50), 6)
+    special_number = random.choice(range(1, 50))
+    return normal_numbers, special_number
+
+random_prediction_numbers, random_prediction_special = generate_random_numbers()
+
+def compare_to_actual(predicted_numbers, predicted_special, actual_numbers, actual_special):
+    correct_numbers = set(predicted_numbers) & set(actual_numbers)
+    correct_special = 1 if predicted_special in actual_special else 0
+    return len(correct_numbers), correct_special
+
+
+def calculate_accuracy(predicted_numbers, predicted_special, actual_numbers, actual_special):
+    correct_count_numbers, correct_special = compare_to_actual(predicted_numbers, predicted_special, actual_numbers, actual_special)
+    accuracy_numbers = (correct_count_numbers / 6) * 100
+    accuracy_special = int(correct_special) * 100
+    return accuracy_numbers, accuracy_special
+
+
+# 歷史中獎號碼
+historical_numbers = [num for draw in draws for num in draw]
+historical_special_numbers = special_numbers
+
+# 計算三種方式的準確率
+accuracy_most_common_numbers, accuracy_most_common_special = calculate_accuracy(most_common_numbers, most_common_special, historical_numbers, historical_special_numbers)
+accuracy_random_choice_numbers, accuracy_random_choice_special = calculate_accuracy(random_choice, random_special_choice, historical_numbers, historical_special_numbers)
+accuracy_completely_random_numbers, accuracy_completely_random_special = calculate_accuracy(random_prediction_numbers, random_prediction_special, historical_numbers, historical_special_numbers)
+
+# 建立預測結果的DataFrame
+predicted_df = pd.DataFrame({
+    "Method": ["熱門抽號法", "過去隨機法", "完全隨機法"],
+    "Num1": [sorted(most_common_numbers)[0], sorted(random_choice)[0], sorted(random_prediction_numbers)[0]],
+    "Num2": [sorted(most_common_numbers)[1], sorted(random_choice)[1], sorted(random_prediction_numbers)[1]],
+    "Num3": [sorted(most_common_numbers)[2], sorted(random_choice)[2], sorted(random_prediction_numbers)[2]],
+    "Num4": [sorted(most_common_numbers)[3], sorted(random_choice)[3], sorted(random_prediction_numbers)[3]],
+    "Num5": [sorted(most_common_numbers)[4], sorted(random_choice)[4], sorted(random_prediction_numbers)[4]],
+    "Num6": [sorted(most_common_numbers)[5], sorted(random_choice)[5], sorted(random_prediction_numbers)[5]],
+    "Special": [most_common_special, random_special_choice, random_prediction_special],
+    "Accuracy Numbers (%)": [accuracy_most_common_numbers, accuracy_random_choice_numbers, accuracy_completely_random_numbers],
+    "Accuracy Special (%)": [accuracy_most_common_special, accuracy_random_choice_special, accuracy_completely_random_special]
+})
+
+# 列印歷史資料表格
+print("歷史中獎數據：")
+print(df.to_string(index=False))
+
+# 列印預測結果表格
+print("\n預測結果：")
+print(predicted_df.to_string(index=False))
+# 將預測結果寫入新的CSV文件
+predicted_df.to_csv(file_path2, index=False)

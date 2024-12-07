@@ -1,0 +1,130 @@
+import random
+import matplotlib.pyplot as plt
+import numpy as np
+
+class SolarPowerPlant:
+    def __init__(self, solar_panel_count, efficiency):
+        self.solar_panel_count = solar_panel_count
+        self.efficiency = efficiency
+        self.total_energy_produced = 0
+        self.available_energy = 0
+        self.total_energy_extracted = 0
+        self.hourly_energy_production = []
+
+    def generate_energy(self, hours_of_sunshine):
+        self.hourly_energy_production = []
+        for hour in range(hours_of_sunshine):
+            # 添加随机因素模擬能量产出的波動
+            random_factor = random.uniform(0.8, 1.2)
+            # 使用sin函数模擬能量产出的波動
+            sin_factor = 0.5 * np.sin(hour * (2 * np.pi / 24)) + 1
+            energy_per_panel = self.efficiency * random_factor * sin_factor
+            total_hourly_energy = energy_per_panel * self.solar_panel_count
+            self.total_energy_produced += total_hourly_energy
+            self.hourly_energy_production.append(total_hourly_energy)
+
+    # 獲取總發電量
+    def get_total_energy_produced(self):
+        return self.total_energy_produced
+
+    def get_hourly_energy_production(self):
+        return self.hourly_energy_production
+
+    def extract_energy(self, amount):
+        max_extraction = self.total_energy_produced * 0.6
+        if amount <= max_extraction and amount <= self.total_energy_produced:
+            self.total_energy_produced -= amount
+            self.available_energy += amount
+            self.total_energy_extracted += amount
+            print(f"成功提取 {amount} kw 能量。")
+            # 更新提取能量后的能量产生列表
+            extraction_index = len(self.hourly_energy_production) - 1
+            self.hourly_energy_production[extraction_index] -= amount
+        elif amount > max_extraction:
+            print("电量提取失敗：提取的電量超过總發電量的60%。")
+        else:
+            print("能量提取失敗：提取的能量超过總發電量。")
+        print(f"剩餘電量: {self.total_energy_produced} kw")
+
+    def get_total_energy_extracted(self):
+        return self.total_energy_extracted
+
+def main():
+    default_solar_panel_count = 20
+    max_module_power = 5000
+    module_area = 1.6
+    solar_irradiance = 1000
+
+    efficiency = round((max_module_power / module_area) / solar_irradiance * 100, 3)
+
+    print("歡迎使用NPUST太陽能發電站模擬系統！")
+    print(f"目前有 {default_solar_panel_count} 台太陽能電池板，每塊效率為 {efficiency} kw。")
+
+    while True:
+        know_sunshine_hours = input("是否知道今天的太陽照射時間？(是/否) ").strip().lower()
+        if know_sunshine_hours == "是":
+            hours_of_sunshine = int(input("請輸入太阳照射时间（小時）："))
+            break
+        elif know_sunshine_hours == "否":
+            weather_condition = input("今天是晴天、陰天还是雨天？ ").strip().lower()
+            weather_mapping = {"晴天": 10, "陰天": 5, "雨天": 2}
+            hours_of_sunshine = weather_mapping.get(weather_condition, 0)
+            if hours_of_sunshine:
+                break
+            else:
+                print("無法識別的天气狀況，請重新輸入。")
+
+    simulation_count = int(input("請輸入要模擬的次数："))
+    total_energy_produced_all_simulations = 0
+    hourly_energy_production_all_simulations = [[] for _ in range(simulation_count)]
+
+    for i in range(simulation_count):
+        print(f"太陽能發電模擬第{i+1}次開始...")
+        solar_plant = SolarPowerPlant(default_solar_panel_count, efficiency)
+        solar_plant.generate_energy(hours_of_sunshine)
+        hourly_energy_production = solar_plant.get_hourly_energy_production()
+        total_energy_produced_all_simulations += sum(hourly_energy_production)
+        hourly_energy_production_all_simulations[i] = hourly_energy_production
+        print(f"太陽能發電模擬第{i+1}次结束。")
+
+    for i in range(simulation_count):
+        plt.plot(range(1, hours_of_sunshine + 1), hourly_energy_production_all_simulations[i], label=f'Sim {i+1}')
+
+    for i in range(simulation_count):
+        plt.plot(range(1, hours_of_sunshine + 1), hourly_energy_production_all_simulations[i], linestyle='-',
+                 color=plt.cm.jet(i / simulation_count), linewidth=0.5)
+
+    plt.xlabel('Time (hours)')
+    plt.ylabel('Energy Produced (kw)')
+    plt.title('Solar Power Production Simulation')
+    plt.legend()
+    plt.grid(True)
+    print("以下是目前能量的相關圖表：")
+    plt.show()
+
+    # 提取能量過程，同时繪製截波器圖表
+    while True:
+        fig, ax = plt.subplots()
+        ax.plot(range(1, hours_of_sunshine + 1), hourly_energy_production_all_simulations[0], label='Current Energy Production', color='blue')
+        ax.plot(range(1, hours_of_sunshine + 1), hourly_energy_production_all_simulations[0], linestyle='-', color='red', linewidth=0.5)
+
+        ax.set_xlabel('Time (hours)')
+        ax.set_ylabel('Energy Produced (kw)')
+        ax.set_title('Solar Power Production and Extraction')
+        ax.legend(loc='upper right')
+
+        extract_energy_choice = input("是否要提取能量？(是/否) ").strip().lower()
+        if extract_energy_choice != "是":
+            break
+        amount_to_extract = float(input("請输入要提取的电量（kw）："))
+        print("正在提取能量，请稍候...")
+        solar_plant.extract_energy(amount_to_extract)
+        if input("是否需要再次提取能量？(是/否) ").strip().lower() != "是":
+          break
+    print("感謝您參與本次太陽能發電站的操作！祝您一路順風~")
+    print(f"總共提取的电量为: {solar_plant.get_total_energy_extracted()} kw")
+    print(f"剩餘能量為: {solar_plant.get_total_energy_produced()} kw")
+    print("以下是目前能量的數值圖表：")
+   
+if __name__ == "__main__":
+    main()

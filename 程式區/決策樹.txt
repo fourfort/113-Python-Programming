@@ -1,0 +1,70 @@
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+
+# 讀取CSV文件
+file_path = '/content/drive/MyDrive/大樂透/大樂透歷史記錄 .csv'
+afile = pd.read_csv(file_path)
+
+# 提取中獎號碼和特別號
+draws = []
+special_numbers = []
+# 使用 iloc 從索引 0 開始遍歷
+for i in range(len(afile)):
+    # 提取每行的中獎號碼和特別號
+    numbers = [afile.iloc[i]['num1'], afile.iloc[i]['num2'], afile.iloc[i]['num3'],
+               afile.iloc[i]['num4'], afile.iloc[i]['num5'], afile.iloc[i]['num6']]
+    special_number = afile.iloc[i]['特別號']
+    draws.append(numbers)
+    special_numbers.append(special_number)
+
+# 轉換成DataFrame
+df = pd.DataFrame(draws, columns=["Num1", "Num2", "Num3", "Num4", "Num5", "Num6"])
+df["Special"] = special_numbers
+
+# 打亂數據順序
+afile = afile.sample(frac=1, random_state=42).reset_index(drop=True)
+
+# 提取最後一期的中獎號碼
+last_draw = afile.iloc[-1]
+last_draw_numbers = [last_draw['num1'], last_draw['num2'], last_draw['num3'],
+                     last_draw['num4'], last_draw['num5'], last_draw['num6']]
+last_draw_numbers_df = pd.DataFrame([last_draw_numbers], columns=['num1', 'num2', 'num3', 'num4', 'num5', 'num6'])
+
+# 將歷史數據中的普通號碼作為特徵數據
+X = afile[['num1', 'num2', 'num3', 'num4', 'num5', 'num6']]
+# 使用特別號碼作為目標值
+y_special = afile['特別號']
+# 預測普通號碼：以多個決策樹模型，分別對每一個號碼進行預測
+predicted_numbers = []
+for i in range(1, 7):
+    # 創建一個臨時模型來預測單個號碼
+    temp_clf = DecisionTreeClassifier()
+    temp_y = afile[f'num{i}']
+    temp_clf.fit(X, temp_y)
+    predicted_number = temp_clf.predict(last_draw_numbers_df)
+    predicted_numbers.append(predicted_number[0])
+# 創建決策樹分類器來預測特別號碼
+clf_special = DecisionTreeClassifier()
+# 訓練特別號碼的模型
+clf_special.fit(X, y_special)
+
+# 進行特別號碼預測
+predicted_special_number = clf_special.predict(last_draw_numbers_df)
+
+# 建立預測結果的 DataFrame
+predicted_df = pd.DataFrame({
+    "Method": ["DecisionTree"],  # 預測方法
+    "Num1": [predicted_numbers[0]],  # 預測的號碼1
+    "Num2": [predicted_numbers[1]],  # 預測的號碼2
+    "Num3": [predicted_numbers[2]],  # 預測的號碼3
+    "Num4": [predicted_numbers[3]],  # 預測的號碼4
+    "Num5": [predicted_numbers[4]],  # 預測的號碼5
+    "Num6": [predicted_numbers[5]],  # 預測的號碼6
+    "Special": [predicted_special_number[0]],  # 預測的特別號
+})
+# 列印預測結果表格
+print("\n預測結果表格：")
+print(predicted_df.to_string(index=False))
+# 將預測結果寫入新的 CSV 文件
+predicted_df.to_csv(file_path2, index=False)

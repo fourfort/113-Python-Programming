@@ -7,13 +7,13 @@ The materials are shared for academic and learning purposes, and I sincerely wel
 
 ## 📂 Repository Structure
 
-- **Programs/**: Main Python scripts developed during the course  
+- **Programs**: Main Python scripts developed during the course  
   - 🎲 Lottery Prediction Program  
   - ⚡ Microgrid System Simulation Program  
 
-- **Reports/**: Course-related written reports  
+- **Reports**: Course-related written reports  
 
-- **Data/**: Supporting datasets and files used for program execution  
+- **Data**: Supporting datasets and files used for program execution  
 
 ---
 
